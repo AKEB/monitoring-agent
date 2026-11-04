@@ -1,0 +1,5 @@
+.env
+/monitoring-agent
+/dist/
+*.exe
+.DS_Store

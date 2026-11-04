@@ -1,0 +1,19 @@
+[Unit]
+Description=Monitoring host agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/monitoring-agent
+ExecStart=/opt/monitoring-agent/monitoring-agent
+Restart=always
+RestartSec=5
+EnvironmentFile=-/opt/monitoring-agent/.env
+
+# Optional: allow Docker inventory without full root by adding the service user to the docker group
+# and setting User=monitoring-agent.
+
+[Install]
+WantedBy=multi-user.target
