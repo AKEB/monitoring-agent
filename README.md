@@ -1,6 +1,6 @@
 # Monitoring Agent
 
-Go host agent for [AKEB monitoring](https://github.com/AKEB/monitoring-server): single static binary that pushes host metrics to the monitoring server every minute.
+Go host agent for [AKEB monitoring](https://github.com/AKEB/monitoring-server): single static binary that pushes host metrics to the monitoring server every 30 seconds.
 
 ![License](https://img.shields.io/badge/license-AGPLv3-blue)
 
@@ -9,7 +9,7 @@ Go host agent for [AKEB monitoring](https://github.com/AKEB/monitoring-server): 
 
 ## What it reports
 
-Every `REPORT_INTERVAL_SEC` (default 60):
+Every `REPORT_INTERVAL_SEC` (default 30):
 
 - Host: hostname, OS/platform/kernel/arch, uptime, virtualization
 - CPU: cores, load1/5/15, usage %
@@ -46,7 +46,7 @@ sudo tee /opt/monitoring-agent/.env >/dev/null <<EOF
 TZ=Europe/Moscow
 SERVER_HOST=https://monitoring.example.com/
 AGENT_KEY_HASH=paste_key_here
-REPORT_INTERVAL_SEC=60
+REPORT_INTERVAL_SEC=30
 EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now monitoring-agent
@@ -71,7 +71,7 @@ docker run -d --name monitoring-agent --restart unless-stopped \
 |----------|---------|---------|
 | `SERVER_HOST` | — | Monitoring base URL (required) |
 | `AGENT_KEY_HASH` | — | Server key from UI (required) |
-| `REPORT_INTERVAL_SEC` | `60` | Push interval (15–600) |
+| `REPORT_INTERVAL_SEC` | `30` | Push interval (15–600) |
 | `AGENT_VERSION` | ldflags / `local` | Reported agent version |
 | `DEBUG` | `false` | Verbose stderr |
 | `COLLECT_DOCKER` | `true` | Docker inventory |

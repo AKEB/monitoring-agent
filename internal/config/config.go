@@ -44,7 +44,7 @@ func Get() *Config {
 			ServerHost:        normalizeHost(getString("SERVER_HOST", "")),
 			AgentKeyHash:      getString("AGENT_KEY_HASH", ""),
 			AgentVersion:      resolveAgentVersion(),
-			ReportIntervalSec: getInt("REPORT_INTERVAL_SEC", 60),
+			ReportIntervalSec: getInt("REPORT_INTERVAL_SEC", 30),
 			Debug:             getBool("DEBUG", false),
 			CollectDocker:     getBool("COLLECT_DOCKER", true),
 			CollectAuth:       getBool("COLLECT_AUTH", true),
