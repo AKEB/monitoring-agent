@@ -20,11 +20,11 @@ import (
 type Collector struct {
 	cfg *config.Config
 
-	mu           sync.Mutex
-	prevNet      map[string]net.IOCountersStat
-	prevNetAt    time.Time
-	authCursor   authCursor
-	authSeen     map[string]struct{}
+	mu         sync.Mutex
+	prevNet    map[string]net.IOCountersStat
+	prevNetAt  time.Time
+	authCursor authCursor
+	authSeen   map[string]struct{}
 }
 
 func New(cfg *config.Config) *Collector {
@@ -51,6 +51,9 @@ func (c *Collector) Collect() Report {
 	}
 	if c.cfg.CollectDocker {
 		r.Docker = collectDocker(c.cfg)
+	}
+	if c.cfg.CollectProxmox {
+		r.Proxmox = collectProxmox(c.cfg)
 	}
 	if c.cfg.CollectAuth {
 		r.AuthEvents = c.collectAuth()
@@ -80,6 +83,9 @@ func collectHost() HostInfo {
 	}
 	if info.Virtualization == "" {
 		info.Virtualization = detectVirtFallback()
+	}
+	if isProxmoxHost() {
+		info.Virtualization = "proxmox"
 	}
 	return info
 }

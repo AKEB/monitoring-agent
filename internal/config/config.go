@@ -21,6 +21,7 @@ type Config struct {
 	ReportIntervalSec int
 	Debug             bool
 	CollectDocker     bool
+	CollectProxmox    bool
 	CollectAuth       bool
 	CollectProcesses  bool
 	ProcessTopN       int
@@ -47,6 +48,7 @@ func Get() *Config {
 			ReportIntervalSec: getInt("REPORT_INTERVAL_SEC", 30),
 			Debug:             getBool("DEBUG", false),
 			CollectDocker:     getBool("COLLECT_DOCKER", true),
+			CollectProxmox:    getBool("COLLECT_PROXMOX", true),
 			CollectAuth:       getBool("COLLECT_AUTH", true),
 			CollectProcesses:  getBool("COLLECT_PROCESSES", true),
 			ProcessTopN:       getInt("PROCESS_TOP_N", 20),

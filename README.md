@@ -17,6 +17,7 @@ Every `REPORT_INTERVAL_SEC` (default 30):
 - Disks (mounts, usage %)
 - Network interfaces: IPs, rx/tx bytes and bps
 - Docker containers (if `/var/run/docker.sock` is reachable)
+- Proxmox VE guests: QEMU VMs and LXC (name, status, CPU/RAM/disk, uptime) when `/etc/pve` is present
 - Auth events (SSH/sudo from `/var/log/auth.log` or `/var/log/secure`, delta)
 - Top processes (+ interesting daemons)
 
@@ -75,6 +76,7 @@ docker run -d --name monitoring-agent --restart unless-stopped \
 | `AGENT_VERSION` | ldflags / `local` | Reported agent version |
 | `DEBUG` | `false` | Verbose stderr |
 | `COLLECT_DOCKER` | `true` | Docker inventory |
+| `COLLECT_PROXMOX` | `true` | Proxmox VE VM/LXC inventory |
 | `COLLECT_AUTH` | `true` | Auth log delta |
 | `COLLECT_PROCESSES` | `true` | Process snapshot |
 | `PROCESS_TOP_N` | `20` | Top processes by CPU |

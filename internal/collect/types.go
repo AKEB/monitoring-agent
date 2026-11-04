@@ -1,19 +1,20 @@
 package collect
 
 type Report struct {
-	AgentKeyHash  string         `json:"agent_key_hash"`
-	AgentVersion  string         `json:"agent_version"`
-	CollectedAt   int64          `json:"collected_at"`
-	UpdateError   string         `json:"update_error,omitempty"`
-	Host          HostInfo       `json:"host"`
-	CPU           CPUInfo        `json:"cpu"`
-	Memory        MemInfo        `json:"memory"`
-	Swap          MemInfo        `json:"swap"`
-	Disks         []DiskInfo     `json:"disks"`
-	Network       NetworkInfo    `json:"network"`
-	Docker        *DockerInfo    `json:"docker,omitempty"`
-	AuthEvents    []AuthEvent    `json:"auth_events,omitempty"`
-	Processes     []ProcessInfo  `json:"processes,omitempty"`
+	AgentKeyHash string        `json:"agent_key_hash"`
+	AgentVersion string        `json:"agent_version"`
+	CollectedAt  int64         `json:"collected_at"`
+	UpdateError  string        `json:"update_error,omitempty"`
+	Host         HostInfo      `json:"host"`
+	CPU          CPUInfo       `json:"cpu"`
+	Memory       MemInfo       `json:"memory"`
+	Swap         MemInfo       `json:"swap"`
+	Disks        []DiskInfo    `json:"disks"`
+	Network      NetworkInfo   `json:"network"`
+	Docker       *DockerInfo   `json:"docker,omitempty"`
+	Proxmox      *ProxmoxInfo  `json:"proxmox,omitempty"`
+	AuthEvents   []AuthEvent   `json:"auth_events,omitempty"`
+	Processes    []ProcessInfo `json:"processes,omitempty"`
 }
 
 type HostInfo struct {
@@ -80,6 +81,26 @@ type DockerContainer struct {
 	Ports   string `json:"ports"`
 }
 
+type ProxmoxInfo struct {
+	Available bool           `json:"available"`
+	Node      string         `json:"node,omitempty"`
+	Guests    []ProxmoxGuest `json:"guests"`
+}
+
+type ProxmoxGuest struct {
+	VMID         int     `json:"vmid"`
+	Name         string  `json:"name"`
+	Type         string  `json:"type"` // qemu | lxc
+	Status       string  `json:"status"`
+	CPUs         int     `json:"cpus,omitempty"`
+	CPU          float64 `json:"cpu,omitempty"` // fraction of assigned CPUs (0..1+)
+	MemBytes     uint64  `json:"mem_bytes,omitempty"`
+	MaxMemBytes  uint64  `json:"maxmem_bytes,omitempty"`
+	DiskBytes    uint64  `json:"disk_bytes,omitempty"`
+	MaxDiskBytes uint64  `json:"maxdisk_bytes,omitempty"`
+	UptimeSec    uint64  `json:"uptime_sec,omitempty"`
+}
+
 type AuthEvent struct {
 	Time    int64  `json:"time"`
 	User    string `json:"user"`
@@ -90,10 +111,10 @@ type AuthEvent struct {
 }
 
 type ProcessInfo struct {
-	PID        int32   `json:"pid"`
-	Name       string  `json:"name"`
-	User       string  `json:"user"`
-	CPUPct     float64 `json:"cpu_pct"`
-	MemRSS     uint64  `json:"mem_rss"`
-	Cmdline    string  `json:"cmdline,omitempty"`
+	PID     int32   `json:"pid"`
+	Name    string  `json:"name"`
+	User    string  `json:"user"`
+	CPUPct  float64 `json:"cpu_pct"`
+	MemRSS  uint64  `json:"mem_rss"`
+	Cmdline string  `json:"cmdline,omitempty"`
 }
