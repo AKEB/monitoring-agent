@@ -41,6 +41,7 @@ func (c *Collector) Collect() Report {
 		AgentKeyHash: c.cfg.AgentKeyHash,
 		AgentVersion: c.cfg.AgentVersion,
 		CollectedAt:  now.Unix(),
+		UpdateError:  strings.TrimSpace(c.cfg.LastUpdateError),
 		Host:         collectHost(),
 		CPU:          collectCPU(),
 		Memory:       collectMemory(),

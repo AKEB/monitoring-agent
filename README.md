@@ -79,13 +79,42 @@ docker run -d --name monitoring-agent --restart unless-stopped \
 | `COLLECT_PROCESSES` | `true` | Process snapshot |
 | `PROCESS_TOP_N` | `20` | Top processes by CPU |
 | `TZ` | `UTC` | Timezone |
+| `AUTO_UPDATE` | `true` | Honor `update` from report API response |
+| `UPDATE_FROM_GITHUB` | `true` | Allow only `github.com/AKEB/monitoring-agent` release URLs |
+
+## Remote updates
+
+The monitoring server can set a **desired agent version** (Admin → Servers). On each successful report the API may return:
+
+```json
+{
+  "status": 0,
+  "server_id": 1,
+  "update": {
+    "version": "v1.0.2",
+    "url": "https://github.com/AKEB/monitoring-agent/releases/download/v1.0.2/monitoring-agent-linux-amd64",
+    "sha256": "...",
+    "arch": "amd64"
+  }
+}
+```
+
+When `AUTO_UPDATE=true`, the agent downloads that asset, verifies SHA-256, replaces its binary, and exits (`systemd` `Restart=always` starts the new build).
+
+Requirements:
+
+- Host can reach `https://github.com` (Releases)
+- Agent runs as a user that can replace `/opt/monitoring-agent/monitoring-agent` (typically root via the packaged unit)
+- Rollback: set desired version back to an older tag (or clear it)
+
+Disable updates on a host with `AUTO_UPDATE=false`.
 
 ## CI and releases
 
 `.github/workflows/build.yml`:
 
-- push/PR → build artifacts (`linux/amd64`, `linux/arm64`)
-- tag `v*` → GitHub Release with both binaries
+- push/PR → build artifacts (`linux/amd64`, `linux/arm64`) + `.sha256` / `checksums.txt`
+- tag `v*` → GitHub Release with binaries and checksums
 - non-PR → Docker Hub `akeb/monitoring-agent` (amd64+arm64)
 
 ```bash

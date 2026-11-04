@@ -4,6 +4,7 @@ type Report struct {
 	AgentKeyHash  string         `json:"agent_key_hash"`
 	AgentVersion  string         `json:"agent_version"`
 	CollectedAt   int64          `json:"collected_at"`
+	UpdateError   string         `json:"update_error,omitempty"`
 	Host          HostInfo       `json:"host"`
 	CPU           CPUInfo        `json:"cpu"`
 	Memory        MemInfo        `json:"memory"`

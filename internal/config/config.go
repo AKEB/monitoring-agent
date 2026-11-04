@@ -14,16 +14,21 @@ import (
 )
 
 type Config struct {
-	Timezone         string
-	ServerHost       string
-	AgentKeyHash     string
-	AgentVersion     string
+	Timezone          string
+	ServerHost        string
+	AgentKeyHash      string
+	AgentVersion      string
 	ReportIntervalSec int
-	Debug            bool
-	CollectDocker    bool
-	CollectAuth      bool
-	CollectProcesses bool
-	ProcessTopN      int
+	Debug             bool
+	CollectDocker     bool
+	CollectAuth       bool
+	CollectProcesses  bool
+	ProcessTopN       int
+	AutoUpdate        bool
+	UpdateFromGitHub  bool
+
+	// LastUpdateError is attached to the next report after a failed self-update.
+	LastUpdateError string
 }
 
 var (
@@ -45,6 +50,8 @@ func Get() *Config {
 			CollectAuth:       getBool("COLLECT_AUTH", true),
 			CollectProcesses:  getBool("COLLECT_PROCESSES", true),
 			ProcessTopN:       getInt("PROCESS_TOP_N", 20),
+			AutoUpdate:        getBool("AUTO_UPDATE", true),
+			UpdateFromGitHub:  getBool("UPDATE_FROM_GITHUB", true),
 		}
 		if cfg.ReportIntervalSec < 15 {
 			cfg.ReportIntervalSec = 15

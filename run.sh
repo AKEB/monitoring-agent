@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION="${VERSION:-v1.0.1}"
+VERSION="${VERSION:-v1.1.0}"
 ARCH="$(uname -m)"
 case "$ARCH" in
   x86_64|amd64) BINARY="monitoring-agent-linux-amd64" ;;
