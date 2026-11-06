@@ -15,6 +15,16 @@ type Report struct {
 	Proxmox      *ProxmoxInfo  `json:"proxmox,omitempty"`
 	AuthEvents   []AuthEvent   `json:"auth_events,omitempty"`
 	Processes    []ProcessInfo `json:"processes,omitempty"`
+	Listeners    []ListenerInfo `json:"listeners,omitempty"`
+}
+
+type ListenerInfo struct {
+	Protocol string `json:"protocol"` // tcp|udp
+	IP       string `json:"ip"`
+	Port     uint16 `json:"port"`
+	Process  string `json:"process,omitempty"`
+	PID      int32  `json:"pid,omitempty"`
+	Service  string `json:"service,omitempty"`
 }
 
 type HostInfo struct {

@@ -40,6 +40,7 @@ Every `REPORT_INTERVAL_SEC` (default 30):
 - Proxmox VE guests: QEMU VMs and LXC (name, status, CPU/RAM/disk, uptime) when `/etc/pve` is present
 - Auth events (SSH/sudo from `/var/log/auth.log` or `/var/log/secure`, delta)
 - Top processes (+ interesting daemons)
+- Listening TCP/UDP ports (bind IP, port, process, service)
 
 ## Build
 
@@ -99,6 +100,7 @@ docker run -d --name monitoring-agent --restart unless-stopped \
 | `COLLECT_PROXMOX` | `true` | Proxmox VE VM/LXC inventory |
 | `COLLECT_AUTH` | `true` | Auth log delta |
 | `COLLECT_PROCESSES` | `true` | Process snapshot |
+| `COLLECT_LISTENERS` | `true` | TCP/UDP listening sockets |
 | `PROCESS_TOP_N` | `20` | Top processes by CPU |
 | `TZ` | `UTC` | Timezone |
 | `AUTO_UPDATE` | `true` | Honor `update` from report API response |

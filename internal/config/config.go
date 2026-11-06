@@ -24,6 +24,7 @@ type Config struct {
 	CollectProxmox    bool
 	CollectAuth       bool
 	CollectProcesses  bool
+	CollectListeners  bool
 	ProcessTopN       int
 	AutoUpdate        bool
 	UpdateFromGitHub  bool
@@ -51,6 +52,7 @@ func Get() *Config {
 			CollectProxmox:    getBool("COLLECT_PROXMOX", true),
 			CollectAuth:       getBool("COLLECT_AUTH", true),
 			CollectProcesses:  getBool("COLLECT_PROCESSES", true),
+			CollectListeners:  getBool("COLLECT_LISTENERS", true),
 			ProcessTopN:       getInt("PROCESS_TOP_N", 20),
 			AutoUpdate:        getBool("AUTO_UPDATE", true),
 			UpdateFromGitHub:  getBool("UPDATE_FROM_GITHUB", true),

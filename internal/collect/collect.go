@@ -61,6 +61,9 @@ func (c *Collector) Collect() Report {
 	if c.cfg.CollectProcesses {
 		r.Processes = collectProcesses(c.cfg.ProcessTopN)
 	}
+	if c.cfg.CollectListeners {
+		r.Listeners = collectListeners()
+	}
 	return r
 }
 
