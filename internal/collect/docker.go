@@ -8,10 +8,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"monitoring-agent/internal/config"
 )
+
+const dockerStatsConcurrency = 8
 
 func collectDocker(cfg *config.Config) *DockerInfo {
 	sock := "/var/run/docker.sock"
@@ -19,7 +22,7 @@ func collectDocker(cfg *config.Config) *DockerInfo {
 		return &DockerInfo{Available: false, Containers: []DockerContainer{}}
 	}
 	client := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 8 * time.Second,
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 				var d net.Dialer
@@ -88,5 +91,110 @@ func collectDocker(cfg *config.Config) *DockerInfo {
 			Ports:   strings.Join(ports, ", "),
 		})
 	}
+	fillDockerStats(cfg, client, out.Containers)
 	return out
+}
+
+func fillDockerStats(cfg *config.Config, client *http.Client, containers []DockerContainer) {
+	sem := make(chan struct{}, dockerStatsConcurrency)
+	var wg sync.WaitGroup
+	for i := range containers {
+		if !strings.EqualFold(containers[i].State, "running") {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(idx int) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			cpu, mem, limit, memPct, err := fetchContainerStats(client, containers[idx].ID)
+			if err != nil {
+				cfg.Logf("docker stats %s: %v", containers[idx].ID, err)
+				return
+			}
+			containers[idx].CPUPct = cpu
+			containers[idx].MemBytes = mem
+			containers[idx].MemLimitBytes = limit
+			containers[idx].MemPct = memPct
+		}(i)
+	}
+	wg.Wait()
+}
+
+type dockerStatsPayload struct {
+	CPUStats struct {
+		CPUUsage struct {
+			TotalUsage  uint64   `json:"total_usage"`
+			PercpuUsage []uint64 `json:"percpu_usage"`
+		} `json:"cpu_usage"`
+		SystemCPUUsage uint64 `json:"system_cpu_usage"`
+		OnlineCPUs     uint32 `json:"online_cpus"`
+	} `json:"cpu_stats"`
+	PreCPUStats struct {
+		CPUUsage struct {
+			TotalUsage uint64 `json:"total_usage"`
+		} `json:"cpu_usage"`
+		SystemCPUUsage uint64 `json:"system_cpu_usage"`
+	} `json:"precpu_stats"`
+	MemoryStats struct {
+		Usage uint64 `json:"usage"`
+		Limit uint64 `json:"limit"`
+		Stats map[string]uint64 `json:"stats"`
+	} `json:"memory_stats"`
+}
+
+func fetchContainerStats(client *http.Client, id string) (cpuPct float64, memBytes, memLimit uint64, memPct float64, err error) {
+	url := fmt.Sprintf("http://localhost/containers/%s/stats?stream=false&one-shot=true", id)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, 0, 0, 0, fmt.Errorf("status %d", resp.StatusCode)
+	}
+	var stats dockerStatsPayload
+	if err := json.NewDecoder(resp.Body).Decode(&stats); err != nil {
+		return 0, 0, 0, 0, err
+	}
+	cpuPct = dockerCPUPercent(stats)
+	memBytes = dockerMemUsage(stats)
+	memLimit = stats.MemoryStats.Limit
+	if memLimit > 0 {
+		memPct = round2(float64(memBytes) / float64(memLimit) * 100.0)
+	}
+	return cpuPct, memBytes, memLimit, memPct, nil
+}
+
+func dockerCPUPercent(stats dockerStatsPayload) float64 {
+	cpuDelta := float64(stats.CPUStats.CPUUsage.TotalUsage) - float64(stats.PreCPUStats.CPUUsage.TotalUsage)
+	systemDelta := float64(stats.CPUStats.SystemCPUUsage) - float64(stats.PreCPUStats.SystemCPUUsage)
+	if cpuDelta <= 0 || systemDelta <= 0 {
+		return 0
+	}
+	online := float64(stats.CPUStats.OnlineCPUs)
+	if online <= 0 {
+		online = float64(len(stats.CPUStats.CPUUsage.PercpuUsage))
+	}
+	if online <= 0 {
+		online = 1
+	}
+	return round2((cpuDelta / systemDelta) * online * 100.0)
+}
+
+func dockerMemUsage(stats dockerStatsPayload) uint64 {
+	usage := stats.MemoryStats.Usage
+	if stats.MemoryStats.Stats != nil {
+		if cache, ok := stats.MemoryStats.Stats["inactive_file"]; ok && usage > cache {
+			return usage - cache
+		}
+		if cache, ok := stats.MemoryStats.Stats["cache"]; ok && usage > cache {
+			return usage - cache
+		}
+	}
+	return usage
 }

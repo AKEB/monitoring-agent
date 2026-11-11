@@ -20,14 +20,16 @@ type Config struct {
 	AgentVersion      string
 	ReportIntervalSec int
 	Debug             bool
-	CollectDocker     bool
-	CollectProxmox    bool
-	CollectAuth       bool
-	CollectProcesses  bool
-	CollectListeners  bool
-	ProcessTopN       int
-	AutoUpdate        bool
-	UpdateFromGitHub  bool
+	CollectDocker        bool
+	CollectProxmox       bool
+	CollectAuth          bool
+	CollectProcesses     bool
+	CollectListeners     bool
+	CollectTemperatures  bool
+	CollectSystemd       bool
+	ProcessTopN          int
+	AutoUpdate           bool
+	UpdateFromGitHub     bool
 
 	// LastUpdateError is attached to the next report after a failed self-update.
 	LastUpdateError string
@@ -48,12 +50,14 @@ func Get() *Config {
 			AgentVersion:      resolveAgentVersion(),
 			ReportIntervalSec: getInt("REPORT_INTERVAL_SEC", 15),
 			Debug:             getBool("DEBUG", false),
-			CollectDocker:     getBool("COLLECT_DOCKER", true),
-			CollectProxmox:    getBool("COLLECT_PROXMOX", true),
-			CollectAuth:       getBool("COLLECT_AUTH", true),
-			CollectProcesses:  getBool("COLLECT_PROCESSES", true),
-			CollectListeners:  getBool("COLLECT_LISTENERS", true),
-			ProcessTopN:       getInt("PROCESS_TOP_N", 20),
+			CollectDocker:        getBool("COLLECT_DOCKER", true),
+			CollectProxmox:       getBool("COLLECT_PROXMOX", true),
+			CollectAuth:          getBool("COLLECT_AUTH", true),
+			CollectProcesses:     getBool("COLLECT_PROCESSES", true),
+			CollectListeners:     getBool("COLLECT_LISTENERS", true),
+			CollectTemperatures:  getBool("COLLECT_TEMPERATURES", true),
+			CollectSystemd:       getBool("COLLECT_SYSTEMD", true),
+			ProcessTopN:          getInt("PROCESS_TOP_N", 20),
 			AutoUpdate:        getBool("AUTO_UPDATE", true),
 			UpdateFromGitHub:  getBool("UPDATE_FROM_GITHUB", true),
 		}

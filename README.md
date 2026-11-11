@@ -36,7 +36,9 @@ Every `REPORT_INTERVAL_SEC` (default 15):
 - Memory / swap
 - Disks (mounts, usage %)
 - Network interfaces: IPs, rx/tx bytes and bps
-- Docker containers (if `/var/run/docker.sock` is reachable)
+- Temperatures (hardware sensors when available)
+- Docker containers with CPU/memory stats (if `/var/run/docker.sock` is reachable)
+- Systemd services: state + CPU/memory from cgroups (Linux)
 - Proxmox VE guests: QEMU VMs and LXC (name, status, CPU/RAM/disk, uptime) when `/etc/pve` is present
 - Auth events (SSH/sudo from `/var/log/auth.log` or `/var/log/secure`, delta)
 - Top processes (+ interesting daemons)
@@ -96,11 +98,13 @@ docker run -d --name monitoring-agent --restart unless-stopped \
 | `REPORT_INTERVAL_SEC` | `15` | Push interval (15–600) |
 | `AGENT_VERSION` | ldflags / `local` | Reported agent version |
 | `DEBUG` | `false` | Verbose stderr |
-| `COLLECT_DOCKER` | `true` | Docker inventory |
+| `COLLECT_DOCKER` | `true` | Docker inventory + CPU/memory stats |
 | `COLLECT_PROXMOX` | `true` | Proxmox VE VM/LXC inventory |
 | `COLLECT_AUTH` | `true` | Auth log delta |
 | `COLLECT_PROCESSES` | `true` | Process snapshot |
 | `COLLECT_LISTENERS` | `true` | TCP/UDP listening sockets |
+| `COLLECT_TEMPERATURES` | `true` | Hardware temperature sensors |
+| `COLLECT_SYSTEMD` | `true` | Systemd service state + cgroup CPU/memory |
 | `PROCESS_TOP_N` | `20` | Top processes by CPU |
 | `TZ` | `UTC` | Timezone |
 | `AUTO_UPDATE` | `true` | Honor `update` from report API response |

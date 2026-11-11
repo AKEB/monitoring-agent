@@ -1,21 +1,29 @@
 package collect
 
 type Report struct {
-	AgentKeyHash string        `json:"agent_key_hash"`
-	AgentVersion string        `json:"agent_version"`
-	CollectedAt  int64         `json:"collected_at"`
-	UpdateError  string        `json:"update_error,omitempty"`
-	Host         HostInfo      `json:"host"`
-	CPU          CPUInfo       `json:"cpu"`
-	Memory       MemInfo       `json:"memory"`
-	Swap         MemInfo       `json:"swap"`
-	Disks        []DiskInfo    `json:"disks"`
-	Network      NetworkInfo   `json:"network"`
-	Docker       *DockerInfo   `json:"docker,omitempty"`
-	Proxmox      *ProxmoxInfo  `json:"proxmox,omitempty"`
-	AuthEvents   []AuthEvent   `json:"auth_events,omitempty"`
-	Processes    []ProcessInfo `json:"processes,omitempty"`
-	Listeners    []ListenerInfo `json:"listeners,omitempty"`
+	AgentKeyHash  string            `json:"agent_key_hash"`
+	AgentVersion  string            `json:"agent_version"`
+	CollectedAt   int64             `json:"collected_at"`
+	UpdateError   string            `json:"update_error,omitempty"`
+	Host          HostInfo          `json:"host"`
+	CPU           CPUInfo           `json:"cpu"`
+	Memory        MemInfo           `json:"memory"`
+	Swap          MemInfo           `json:"swap"`
+	Disks         []DiskInfo        `json:"disks"`
+	Network       NetworkInfo       `json:"network"`
+	Temperatures  []TempSensor      `json:"temperatures,omitempty"`
+	Docker        *DockerInfo       `json:"docker,omitempty"`
+	Proxmox       *ProxmoxInfo      `json:"proxmox,omitempty"`
+	Systemd       *SystemdInfo      `json:"systemd,omitempty"`
+	AuthEvents    []AuthEvent       `json:"auth_events,omitempty"`
+	Processes     []ProcessInfo     `json:"processes,omitempty"`
+	Listeners     []ListenerInfo    `json:"listeners,omitempty"`
+}
+
+type TempSensor struct {
+	Sensor string  `json:"sensor"`
+	Label  string  `json:"label,omitempty"`
+	TempC  float64 `json:"temp_c"`
 }
 
 type ListenerInfo struct {
@@ -82,13 +90,33 @@ type DockerInfo struct {
 }
 
 type DockerContainer struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Image   string `json:"image"`
-	State   string `json:"state"`
-	Status  string `json:"status"`
-	Created int64  `json:"created"`
-	Ports   string `json:"ports"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Image         string  `json:"image"`
+	State         string  `json:"state"`
+	Status        string  `json:"status"`
+	Created       int64   `json:"created"`
+	Ports         string  `json:"ports"`
+	CPUPct        float64 `json:"cpu_pct,omitempty"`
+	MemBytes      uint64  `json:"mem_bytes,omitempty"`
+	MemLimitBytes uint64  `json:"mem_limit_bytes,omitempty"`
+	MemPct        float64 `json:"mem_pct,omitempty"`
+}
+
+type SystemdInfo struct {
+	Available bool           `json:"available"`
+	Units     []SystemdUnit  `json:"units"`
+}
+
+type SystemdUnit struct {
+	Name         string  `json:"name"`
+	LoadState    string  `json:"load_state,omitempty"`
+	ActiveState  string  `json:"active_state"`
+	SubState     string  `json:"sub_state,omitempty"`
+	CPUPct       float64 `json:"cpu_pct,omitempty"`
+	CPUPeakPct   float64 `json:"cpu_peak_pct,omitempty"`
+	MemBytes     uint64  `json:"mem_bytes,omitempty"`
+	MemPeakBytes uint64  `json:"mem_peak_bytes,omitempty"`
 }
 
 type ProxmoxInfo struct {
