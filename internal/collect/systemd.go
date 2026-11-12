@@ -45,6 +45,7 @@ func (c *Collector) collectSystemd() *SystemdInfo {
 	}
 
 	nextCPU := map[string]systemdCPUSample{}
+	nextPeaks := map[string]systemdPeak{}
 	out := make([]SystemdUnit, 0, len(units))
 	for _, u := range units {
 		name := strings.TrimSpace(u.Name)
@@ -56,17 +57,21 @@ func (c *Collector) collectSystemd() *SystemdInfo {
 			continue
 		}
 
-		usageUsec, memBytes := readUnitCgroup(name)
+		var usageUsec, memBytes uint64
 		cpuPct := 0.0
-		if usageUsec > 0 {
-			nextCPU[name] = systemdCPUSample{usageUsec: usageUsec, at: now}
-			if prev, ok := c.systemdPrevCPU[name]; ok && now.After(prev.at) && usageUsec >= prev.usageUsec {
-				elapsed := now.Sub(prev.at).Seconds()
-				if elapsed > 0 {
-					delta := float64(usageUsec - prev.usageUsec)
-					cpuPct = round2((delta / 1e6) / elapsed * 100.0)
-					if cpuPct < 0 {
-						cpuPct = 0
+		// Inactive units have no live cgroup accounting; skip filesystem reads.
+		if active != "inactive" {
+			usageUsec, memBytes = readUnitCgroup(name)
+			if usageUsec > 0 {
+				nextCPU[name] = systemdCPUSample{usageUsec: usageUsec, at: now}
+				if prev, ok := c.systemdPrevCPU[name]; ok && now.After(prev.at) && usageUsec >= prev.usageUsec {
+					elapsed := now.Sub(prev.at).Seconds()
+					if elapsed > 0 {
+						delta := float64(usageUsec - prev.usageUsec)
+						cpuPct = round2((delta / 1e6) / elapsed * 100.0)
+						if cpuPct < 0 {
+							cpuPct = 0
+						}
 					}
 				}
 			}
@@ -79,7 +84,7 @@ func (c *Collector) collectSystemd() *SystemdInfo {
 		if memBytes > peak.memBytes {
 			peak.memBytes = memBytes
 		}
-		c.systemdPeaks[name] = peak
+		nextPeaks[name] = peak
 
 		out = append(out, SystemdUnit{
 			Name:         name,
@@ -93,6 +98,7 @@ func (c *Collector) collectSystemd() *SystemdInfo {
 		})
 	}
 	c.systemdPrevCPU = nextCPU
+	c.systemdPeaks = nextPeaks
 	return &SystemdInfo{Available: true, Units: out}
 }
 

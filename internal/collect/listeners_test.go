@@ -5,6 +5,43 @@ import (
 	"testing"
 )
 
+func TestDecodeProcNetAddrIPv4(t *testing.T) {
+	// 10.0.0.5:22 — little-endian hex as in /proc/net/tcp
+	ip, port, ok := decodeProcNetAddr("0500000A:0016")
+	if !ok {
+		t.Fatal("expected ok")
+	}
+	if ip != "10.0.0.5" || port != 22 {
+		t.Fatalf("got %s:%d", ip, port)
+	}
+}
+
+func TestDecodeProcNetAddrIPv6Localhost(t *testing.T) {
+	// ::1 port 80
+	ip, port, ok := decodeProcNetAddr("00000000000000000000000001000000:0050")
+	if !ok {
+		t.Fatal("expected ok")
+	}
+	if port != 80 {
+		t.Fatalf("port=%d", port)
+	}
+	if ip != "::1" && ip != "0:0:0:0:0:0:0:1" {
+		t.Fatalf("ip=%q", ip)
+	}
+}
+
+func TestIsProcNetRemoteUnspecified(t *testing.T) {
+	if !isProcNetRemoteUnspecified("00000000:0000") {
+		t.Fatal("ipv4 zero remote")
+	}
+	if !isProcNetRemoteUnspecified("00000000000000000000000000000000:0000") {
+		t.Fatal("ipv6 zero remote")
+	}
+	if isProcNetRemoteUnspecified("0100007F:0035") {
+		t.Fatal("should not treat non-zero remote as unspecified")
+	}
+}
+
 func TestNormalizeListenIP(t *testing.T) {
 	cases := map[string]string{
 		"":                   "0.0.0.0",

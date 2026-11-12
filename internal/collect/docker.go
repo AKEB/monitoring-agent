@@ -16,20 +16,36 @@ import (
 
 const dockerStatsConcurrency = 8
 
+var (
+	dockerClientOnce sync.Once
+	dockerHTTP       *http.Client
+)
+
+func dockerClient() *http.Client {
+	dockerClientOnce.Do(func() {
+		dockerHTTP = &http.Client{
+			Timeout: 8 * time.Second,
+			Transport: &http.Transport{
+				DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+					var d net.Dialer
+					return d.DialContext(ctx, "unix", "/var/run/docker.sock")
+				},
+				MaxIdleConns:        8,
+				MaxIdleConnsPerHost: 8,
+				IdleConnTimeout:     30 * time.Second,
+				DisableCompression:  true,
+			},
+		}
+	})
+	return dockerHTTP
+}
+
 func collectDocker(cfg *config.Config) *DockerInfo {
 	sock := "/var/run/docker.sock"
 	if _, err := os.Stat(sock); err != nil {
 		return &DockerInfo{Available: false, Containers: []DockerContainer{}}
 	}
-	client := &http.Client{
-		Timeout: 8 * time.Second,
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				var d net.Dialer
-				return d.DialContext(ctx, "unix", sock)
-			},
-		},
-	}
+	client := dockerClient()
 	req, err := http.NewRequest(http.MethodGet, "http://localhost/containers/json?all=true", nil)
 	if err != nil {
 		cfg.Logf("docker request: %v", err)
@@ -137,8 +153,8 @@ type dockerStatsPayload struct {
 		SystemCPUUsage uint64 `json:"system_cpu_usage"`
 	} `json:"precpu_stats"`
 	MemoryStats struct {
-		Usage uint64 `json:"usage"`
-		Limit uint64 `json:"limit"`
+		Usage uint64            `json:"usage"`
+		Limit uint64            `json:"limit"`
 		Stats map[string]uint64 `json:"stats"`
 	} `json:"memory_stats"`
 }
@@ -167,6 +183,9 @@ func fetchContainerStats(client *http.Client, id string) (cpuPct float64, memByt
 	if memLimit > 0 {
 		memPct = round2(float64(memBytes) / float64(memLimit) * 100.0)
 	}
+	// Drop large per-CPU slice promptly; only OnlineCPUs is needed after percent calc.
+	stats.CPUStats.CPUUsage.PercpuUsage = nil
+	stats.MemoryStats.Stats = nil
 	return cpuPct, memBytes, memLimit, memPct, nil
 }
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
+	"runtime/debug"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -33,9 +35,17 @@ func main() {
 	defer ticker.Stop()
 
 	var updateOnce atomic.Bool
+	var collectCycle uint64
 
 	sendOnce := func() {
 		r := collector.Collect()
+		collectCycle++
+		// Collection allocates large temporary buffers (proc tables, JSON).
+		// Return scavenged pages to the OS periodically so cgroup RSS stays honest.
+		if collectCycle%4 == 0 {
+			runtime.GC()
+			debug.FreeOSMemory()
+		}
 		resp, err := client.Send(r)
 		if err != nil {
 			cfg.Errorf("report failed: %v", err)
