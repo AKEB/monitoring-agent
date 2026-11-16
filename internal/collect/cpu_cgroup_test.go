@@ -31,3 +31,26 @@ func TestCPUPctFromUsageDeltaUnchanged(t *testing.T) {
 		t.Fatalf("got %v want 50", got)
 	}
 }
+
+func TestTrimToEnvCgroup(t *testing.T) {
+	cases := []struct {
+		in, want string
+	}{
+		{"", ""},
+		{"/", ""},
+		{"init.scope", ""},
+		{"/init.scope", ""},
+		{"lxc/2006/init.scope", "lxc/2006"},
+		{"lxc/2006", "lxc/2006"},
+		{"lxc.payload.2006/init.scope", "lxc.payload.2006"},
+		{"system.slice/docker-abc123.scope", "system.slice/docker-abc123.scope"},
+		{"system.slice/monitoring-agent.service", ""},
+		{"system.slice", ""},
+		{"user.slice", ""},
+	}
+	for _, tc := range cases {
+		if got := trimToEnvCgroup(tc.in); got != tc.want {
+			t.Fatalf("trimToEnvCgroup(%q)=%q want %q", tc.in, got, tc.want)
+		}
+	}
+}

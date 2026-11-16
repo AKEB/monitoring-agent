@@ -94,22 +94,80 @@ func envCgroupBases() []string {
 		out = append(out, p)
 	}
 
-	// Prefer PID 1's cgroup: on a shared host hierarchy this is the LXC/VM root
-	// (not /system.slice/monitoring-agent.service). Empty/"/" means we already
-	// sit at the cgroup namespace root (host or container with private ns).
-	if rel := cgroupV2PathFromProc(1); rel != "" {
+	// Prefer the environment root derived from PID 1 (LXC/docker payload),
+	// never init.scope / *.service leaves (those are ~0% CPU).
+	if rel := envCgroupRelFromProc(1); rel != "" {
 		add(filepath.Join("/sys/fs/cgroup", rel))
-	}
-	if rel := cgroupV1PathFromProc(1, "cpuacct"); rel != "" {
 		add(filepath.Join("/sys/fs/cgroup/cpuacct", rel))
 		add(filepath.Join("/sys/fs/cgroup/cpu,cpuacct", rel))
 	}
 
-	// Namespace root / host root fallback.
+	// Namespace root / host root: correct for private cgroupns (LXC nesting)
+	// and bare-metal hosts. On a shared hierarchy without a container rel
+	// above, this is whole-machine CPU (same ballpark as /proc/stat).
 	add("/sys/fs/cgroup")
 	add("/sys/fs/cgroup/cpuacct")
 	add("/sys/fs/cgroup/cpu,cpuacct")
 	return out
+}
+
+// envCgroupRelFromProc returns the relative cgroup path that represents the
+// whole OS instance (CT/VM/host), stripping systemd unit leaves like
+// init.scope that only account for a single process.
+func envCgroupRelFromProc(pid int) string {
+	rel := cgroupV2PathFromProc(pid)
+	if rel == "" {
+		rel = cgroupV1PathFromProc(pid, "cpuacct")
+	}
+	return trimToEnvCgroup(rel)
+}
+
+// trimToEnvCgroup walks up from a process cgroup to the container/host root.
+// Examples:
+//
+//	"init.scope"                 -> "" (use /sys/fs/cgroup)
+//	"lxc/2006/init.scope"        -> "lxc/2006"
+//	"system.slice/docker-abc.scope" -> "system.slice/docker-abc.scope"
+//	"system.slice/foo.service"   -> "" (host unit, not an env root)
+func trimToEnvCgroup(rel string) string {
+	rel = strings.Trim(strings.TrimSpace(rel), "/")
+	for rel != "" {
+		base := filepath.Base(rel)
+		if isContainerCgroupName(base) {
+			return rel
+		}
+		// Strip ordinary systemd leaves that are not the machine/container.
+		if base == "init.scope" || strings.HasSuffix(base, ".service") {
+			parent := filepath.Dir(rel)
+			if parent == "." || parent == "/" {
+				return ""
+			}
+			rel = parent
+			continue
+		}
+		if base == "system.slice" || base == "user.slice" {
+			return ""
+		}
+		return rel
+	}
+	return ""
+}
+
+func isContainerCgroupName(name string) bool {
+	n := strings.ToLower(name)
+	switch {
+	case strings.HasPrefix(n, "lxc"),
+		strings.Contains(n, "lxc"),
+		strings.HasPrefix(n, "docker"),
+		strings.Contains(n, "docker-"),
+		strings.HasPrefix(n, "libpod"),
+		strings.Contains(n, "cri-"),
+		strings.HasPrefix(n, "machine-"),
+		strings.Contains(n, "containerd"):
+		return true
+	default:
+		return false
+	}
 }
 
 func cgroupV2PathFromProc(pid int) string {
