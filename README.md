@@ -32,7 +32,7 @@ Go host agent for [AKEB monitoring](https://github.com/AKEB/monitoring-server): 
 Every `REPORT_INTERVAL_SEC` (default 15):
 
 - Host: hostname, OS/platform/kernel/arch, uptime, virtualization
-- CPU: cores, load1/5/15, usage %
+- CPU: cores, load1/5/15, usage % (cgroup `cpu.stat` when available — correct inside LXC; falls back to `/proc/stat`)
 - Memory / swap
 - Disks (mounts, usage %)
 - Network interfaces: IPs, rx/tx bytes and bps

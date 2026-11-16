@@ -25,6 +25,7 @@ type Collector struct {
 	prevNetAt      time.Time
 	authCursor     authCursor
 	authSeen       map[string]struct{}
+	prevCgroupCPU  systemdCPUSample
 	systemdPrevCPU map[string]systemdCPUSample
 	systemdPeaks   map[string]systemdPeak
 }
@@ -45,7 +46,7 @@ func (c *Collector) Collect() Report {
 		CollectedAt:  now.Unix(),
 		UpdateError:  strings.TrimSpace(c.cfg.LastUpdateError),
 		Host:         collectHost(),
-		CPU:          collectCPU(),
+		CPU:          c.collectCPU(),
 		Memory:       collectMemory(),
 		Swap:         collectSwap(),
 		Disks:        collectDisks(),
@@ -115,7 +116,7 @@ func detectVirtFallback() string {
 	return "unknown"
 }
 
-func collectCPU() CPUInfo {
+func (c *Collector) collectCPU() CPUInfo {
 	out := CPUInfo{}
 	if cores, err := cpu.Counts(true); err == nil {
 		out.Cores = cores
@@ -125,7 +126,11 @@ func collectCPU() CPUInfo {
 		out.Load5 = avg.Load5
 		out.Load15 = avg.Load15
 	}
-	if pct, err := cpu.Percent(0, false); err == nil && len(pct) > 0 {
+	// Prefer cgroup accounting: inside LXC/Docker /proc/stat often reflects the
+	// host, while cpu.stat matches what Proxmox reports for the guest.
+	if pct, ok := c.cpuUsageFromCgroup(out.Cores); ok {
+		out.UsagePct = pct
+	} else if pct, err := cpu.Percent(0, false); err == nil && len(pct) > 0 {
 		out.UsagePct = round2(pct[0])
 	}
 	return out
