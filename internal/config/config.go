@@ -47,7 +47,7 @@ func Get() *Config {
 			Timezone:          getString("TZ", "UTC"),
 			ServerHost:        normalizeHost(getString("SERVER_HOST", "")),
 			AgentKeyHash:      getString("AGENT_KEY_HASH", ""),
-			AgentVersion:      resolveAgentVersion(),
+			AgentVersion:      ResolveVersion(),
 			ReportIntervalSec: getInt("REPORT_INTERVAL_SEC", 15),
 			Debug:             getBool("DEBUG", false),
 			CollectDocker:        getBool("COLLECT_DOCKER", true),
@@ -156,7 +156,8 @@ func normalizeHost(v string) string {
 	return v + "/"
 }
 
-func resolveAgentVersion() string {
+// ResolveVersion returns AGENT_VERSION env, else build-time ldflag, else "local".
+func ResolveVersion() string {
 	if v := strings.TrimSpace(getString("AGENT_VERSION", "")); v != "" {
 		return v
 	}

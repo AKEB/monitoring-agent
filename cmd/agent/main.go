@@ -6,10 +6,12 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
 
+	"monitoring-agent/internal/buildinfo"
 	"monitoring-agent/internal/collect"
 	"monitoring-agent/internal/config"
 	"monitoring-agent/internal/report"
@@ -17,6 +19,21 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "-version", "--version", "version", "-v":
+			v := strings.TrimSpace(buildinfo.Version)
+			if v == "" {
+				v = "local"
+			}
+			fmt.Println(v)
+			return
+		case "-h", "--help", "help":
+			fmt.Fprintf(os.Stderr, "usage: %s\n  -version  print build version and exit\n", os.Args[0])
+			return
+		}
+	}
+
 	cfg := config.Get()
 	if cfg.ServerHost == "" || cfg.AgentKeyHash == "" {
 		fmt.Fprintln(os.Stderr, "SERVER_HOST and AGENT_KEY_HASH are required (e.g. from .env next to the binary).")
