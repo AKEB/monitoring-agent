@@ -36,8 +36,13 @@ func main() {
 
 	var updateOnce atomic.Bool
 	var collectCycle uint64
+	var failStreak int
+	var backoffUntil time.Time
 
 	sendOnce := func() {
+		if !backoffUntil.IsZero() && time.Now().Before(backoffUntil) {
+			return
+		}
 		r := collector.Collect()
 		collectCycle++
 		// Collection allocates large temporary buffers (proc tables, JSON).
@@ -48,9 +53,25 @@ func main() {
 		}
 		resp, err := client.Send(r)
 		if err != nil {
-			cfg.Errorf("report failed: %v", err)
+			failStreak++
+			// Exponential backoff while monitoring is down — avoids a reconnect stampede.
+			delay := time.Duration(cfg.ReportIntervalSec) * time.Second
+			if failStreak >= 2 {
+				mult := failStreak - 1
+				if mult > 8 {
+					mult = 8
+				}
+				delay = time.Duration(cfg.ReportIntervalSec*mult) * time.Second
+				if delay > 120*time.Second {
+					delay = 120 * time.Second
+				}
+			}
+			backoffUntil = time.Now().Add(delay)
+			cfg.Errorf("report failed (backoff %s): %v", delay, err)
 			return
 		}
+		failStreak = 0
+		backoffUntil = time.Time{}
 		if cfg.LastUpdateError != "" {
 			// Cleared after a successful report that carried the error.
 			cfg.LastUpdateError = ""
